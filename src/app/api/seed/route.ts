@@ -6,8 +6,8 @@ import * as bcrypt from "bcryptjs";
  * POST /api/seed
  * Cria usuário de teste para desenvolvimento
  *
- * Email: admin@herge.com
- * Senha: herge2026
+ * Email: ericgbueno@gmail.com
+ * Senha: portaaberta
  */
 export async function POST(req: NextRequest) {
   const secret = req.headers.get("x-seed-secret");
@@ -18,14 +18,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const hashedPassword = await bcrypt.hash("herge2026", 10);
+    const hashedPassword = await bcrypt.hash("portaaberta", 10);
 
     const user = await prisma.user.upsert({
-      where: { email: "admin@herge.com" },
+      where: { email: "ericgbueno@gmail.com" },
       update: {},
       create: {
-        email: "admin@herge.com",
-        name: "Admin",
+        email: "ericgbueno@gmail.com",
+        name: "Eric Bueno",
         passwordHash: hashedPassword,
       },
     });
@@ -39,8 +39,8 @@ export async function POST(req: NextRequest) {
           name: user.name,
         },
         credentials: {
-          email: "admin@herge.com",
-          password: "herge2026",
+          email: "ericgbueno@gmail.com",
+          password: "portaaberta",
         },
       },
       { status: 201 }
