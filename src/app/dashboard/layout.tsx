@@ -6,7 +6,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-neutral-950 text-neutral-100">
       <header className="flex items-center justify-between border-b border-neutral-800 px-6 py-4">
         <div className="flex items-center gap-6">
-          <span className="font-semibold">facaADS</span>
+          <span className="font-semibold">Hergé Gestão de tráfego</span>
         </div>
         <SignOutButton />
       </header>

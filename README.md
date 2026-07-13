@@ -1,4 +1,4 @@
-# facaADS
+# Hergé Gestão de tráfego
 
 Dashboard de monitoramento de campanhas multi-canal: Meta Ads, Google Ads, TikTok Ads e Shopee Ads.
 Visualize gastos, CTR, conversões e CPA em tempo real com sincronização automática diária.

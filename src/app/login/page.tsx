@@ -39,7 +39,7 @@ export default function LoginPage() {
         onSubmit={handleSubmit}
         className="w-full max-w-sm space-y-4 rounded-lg border border-neutral-800 bg-neutral-900 p-8"
       >
-        <h1 className="text-xl font-semibold text-neutral-100">facaADS</h1>
+        <h1 className="text-xl font-semibold text-neutral-100">Hergé Gestão de tráfego</h1>
         <p className="text-sm text-neutral-400">Entrar no painel</p>
 
         <div className="space-y-1">

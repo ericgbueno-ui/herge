@@ -1,0 +1,54 @@
+﻿═══════════════════════════════════════════════════════════════
+FacaADS - ENVIRONMENT VARIABLES PARA VERCEL
+═══════════════════════════════════════════════════════════════
+
+🔗 DATABASE (COPIE EXATAMENTE):
+
+KEY: DATABASE_URL
+VALUE: postgresql://neondb_owner:npg_tKYk7Frdfl4u@ep-hidden-term-ac4vckpp-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+═══════════════════════════════════════════════════════════════
+
+🔐 SECRETS GERADOS (COPIE CADA UM):
+
+KEY: AUTH_SECRET
+VALUE: xNSo6sjav3r/rK2mCeHmOfjJ6DaSCWkDFzE2gqqcM/8=
+
+KEY: CRON_SECRET
+VALUE: Go7FUrtp+NJK0h2HiaPZEiJzcnXpSgd6SohtedioDXA=
+
+KEY: CONVERSION_WEBHOOK_SECRET
+VALUE: B3h4/6XxJO12r+PniREyVyjjTpiWdNNx7PI4Nip9lhg=
+
+═══════════════════════════════════════════════════════════════
+
+📱 PREENCHA COM SUAS CREDENCIAIS:
+
+KEY: META_BUSINESS_ACCOUNT_ID
+VALUE: (seu ID)
+
+KEY: META_ACCESS_TOKEN
+VALUE: (seu token)
+
+KEY: META_PIXEL_ID
+VALUE: (seu pixel ID)
+
+KEY: GOOGLE_DEVELOPER_TOKEN
+VALUE: (seu token)
+
+KEY: GOOGLE_CLIENT_ID
+VALUE: (seu client ID)
+
+KEY: GOOGLE_CLIENT_SECRET
+VALUE: (seu secret)
+
+KEY: GOOGLE_LOGIN_CUSTOMER_ID
+VALUE: (seu MCC ID)
+
+KEY: TIKTOK_BUSINESS_ACCOUNT_ID
+VALUE: (seu ID)
+
+KEY: TIKTOK_ACCESS_TOKEN
+VALUE: (seu token)
+
+═══════════════════════════════════════════════════════════════

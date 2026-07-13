@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "facaADS",
-  description: "Monitor de campanhas e conversas — Meta, Google, TikTok, Shopee Ads",
+  title: "Hergé Gestão de tráfego",
+  description: "Dashboard de métricas de campanhas — Meta, Google, TikTok, Shopee Ads",
 };
 
 export default function RootLayout({
