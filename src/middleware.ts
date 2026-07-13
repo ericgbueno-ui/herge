@@ -1,15 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 
-export async function middleware(request: NextRequest) {
-  // Proteger dashboard com auth
+export function middleware(request: NextRequest) {
+  // Redirecionar para seleção de projeto se não houver projeto selecionado
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.redirect(new URL("/login", request.url));
-    }
-
-    // Redirecionar para seleção de projeto se não houver projeto selecionado
     const projectId = request.cookies.get("selectedProject")?.value;
     if (!projectId) {
       return NextResponse.redirect(new URL("/projects", request.url));
