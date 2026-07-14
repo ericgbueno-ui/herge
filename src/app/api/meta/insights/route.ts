@@ -24,6 +24,13 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    if (!accountId) {
+      return NextResponse.json(
+        { error: "Meta Ads account ID not configured and could not be discovered" },
+        { status: 400 }
+      );
+    }
+
     // Get date range (last 30 days)
     const today = new Date();
     const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
