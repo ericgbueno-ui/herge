@@ -37,13 +37,8 @@ const CHANNELS = [
   },
 ];
 
-// Mock accounts only for Shopee (no official API)
-const MOCK_ACCOUNTS: Record<string, Array<{ id: string; name: string; businessId: string }>> = {
-  SHOPEE: [
-    { id: "shopee-001", name: "Loja Principal", businessId: "shop_123456" },
-    { id: "shopee-002", name: "Loja Secundária", businessId: "shop_789012" },
-  ],
-};
+// No more mock accounts - all platforms use real data
+const MOCK_ACCOUNTS: Record<string, Array<{ id: string; name: string; businessId: string }>> = {};
 
 export default function ProjectsPage() {
   const router = useRouter();
@@ -58,6 +53,8 @@ export default function ProjectsPage() {
       fetchAccounts("/api/auth/google/accounts");
     } else if (selectedChannel === "TIKTOK") {
       fetchAccounts("/api/auth/tiktok/accounts");
+    } else if (selectedChannel === "SHOPEE") {
+      fetchAccounts("/api/auth/shopee/accounts");
     }
   }, [selectedChannel]);
 
@@ -82,10 +79,10 @@ export default function ProjectsPage() {
     router.push("/dashboard");
   }
 
-  // Show real accounts for META, GOOGLE, TIKTOK; mock only for SHOPEE
-  const accounts = ["META", "GOOGLE", "TIKTOK"].includes(selectedChannel || "")
+  // All platforms now use real data
+  const accounts = ["META", "GOOGLE", "TIKTOK", "SHOPEE"].includes(selectedChannel || "")
     ? metaAccounts
-    : MOCK_ACCOUNTS[selectedChannel] || [];
+    : [];
 
   return (
     <div className="min-h-screen bg-neutral-950 text-neutral-100 px-6 py-12">

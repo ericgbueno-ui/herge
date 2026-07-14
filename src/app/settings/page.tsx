@@ -14,6 +14,7 @@ export default function SettingsPage() {
   const [metaAccounts, setMetaAccounts] = useState<AdAccount[]>([]);
   const [googleAccounts, setGoogleAccounts] = useState<AdAccount[]>([]);
   const [tiktokAccounts, setTikTokAccounts] = useState<AdAccount[]>([]);
+  const [shopeeAccounts, setShopeeAccounts] = useState<AdAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState<string | null>(null);
   const [connecting, setConnecting] = useState(false);
@@ -29,15 +30,17 @@ export default function SettingsPage() {
   async function fetchAllAccounts() {
     try {
       setLoading(true);
-      const [meta, google, tiktok] = await Promise.all([
+      const [meta, google, tiktok, shopee] = await Promise.all([
         fetch("/api/auth/meta/accounts").then((r) => r.json()),
         fetch("/api/auth/google/accounts").then((r) => r.json()),
         fetch("/api/auth/tiktok/accounts").then((r) => r.json()),
+        fetch("/api/auth/shopee/accounts").then((r) => r.json()),
       ]);
 
       setMetaAccounts(meta.accounts || []);
       setGoogleAccounts(google.accounts || []);
       setTikTokAccounts(tiktok.accounts || []);
+      setShopeeAccounts(shopee.accounts || []);
     } catch (err) {
       console.error("Error fetching accounts:", err);
     } finally {
@@ -165,10 +168,181 @@ export default function SettingsPage() {
         tokenHint="Obtenha em: TikTok Business Center → Settings → Apps → Tokens"
       />
 
+      {/* Shopee Ads Section */}
+      <ShopeeSection
+        accounts={shopeeAccounts}
+        loading={loading}
+        showForm={showForm === "SHOPEE"}
+        onToggleForm={() => setShowForm(showForm === "SHOPEE" ? null : "SHOPEE")}
+        formData={formData}
+        setFormData={setFormData}
+        onImport={async (csv) => {
+          setConnecting(true);
+          setError(null);
+          setSuccess(null);
+
+          try {
+            const response = await fetch("/api/shopee/import", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                csvContent: csv,
+                accountId: formData.id || `shopee-${Date.now()}`,
+                accountName: formData.name || "Loja Shopee",
+              }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+              setSuccess(`Importados ${data.result.synced} campanhas do Shopee!`);
+              setFormData({ token: "", id: "", name: "" });
+              setShowForm(null);
+              await fetchAllAccounts();
+            } else {
+              setError(data.error || "Erro ao importar");
+            }
+          } catch (err) {
+            setError("Erro ao importar CSV");
+            console.error(err);
+          } finally {
+            setConnecting(false);
+          }
+        }}
+        connecting={connecting}
+        error={error}
+      />
+
       {/* Success Message */}
       {success && (
         <div className="p-4 rounded-lg bg-green-900 border border-green-700 text-green-100 text-sm">
           {success}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ShopeeSection({
+  accounts,
+  loading,
+  showForm,
+  onToggleForm,
+  formData,
+  setFormData,
+  onImport,
+  connecting,
+  error,
+}: {
+  accounts: AdAccount[];
+  loading: boolean;
+  showForm: boolean;
+  onToggleForm: () => void;
+  formData: any;
+  setFormData: (data: any) => void;
+  onImport: (csv: string) => void;
+  connecting: boolean;
+  error: string | null;
+}) {
+  const [csvFile, setCsvFile] = useState<File | null>(null);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files?.[0]) {
+      setCsvFile(e.target.files[0]);
+    }
+  };
+
+  const handleImport = async () => {
+    if (!csvFile) {
+      alert("Selecione um arquivo CSV");
+      return;
+    }
+
+    const text = await csvFile.text();
+    onImport(text);
+    setCsvFile(null);
+  };
+
+  return (
+    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-lg font-semibold text-neutral-100">🛍️ Shopee Ads</h2>
+          <p className="text-sm text-neutral-400">Shopee Seller Center</p>
+        </div>
+        <button
+          onClick={onToggleForm}
+          className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-100 transition-all"
+        >
+          {showForm ? "Cancelar" : "+ Importar CSV"}
+        </button>
+      </div>
+
+      {/* Import Form */}
+      {showForm && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleImport();
+          }}
+          className="space-y-4 mb-6 p-4 bg-neutral-800 rounded-md"
+        >
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">Nome da Loja</label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Minha Loja Shopee"
+              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm text-neutral-300 mb-1">Arquivo CSV</label>
+            <input
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+              required
+            />
+            <p className="text-xs text-neutral-500 mt-1">
+              Colunas esperadas: campaign_name, campaign_id, spend, impressions, clicks, conversions, conversion_value
+            </p>
+          </div>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={connecting || !csvFile}
+            className="w-full px-4 py-2 rounded-md bg-neutral-100 text-neutral-900 text-sm font-medium disabled:opacity-50 hover:bg-neutral-200"
+          >
+            {connecting ? "Importando..." : "Importar"}
+          </button>
+        </form>
+      )}
+
+      {/* Accounts List */}
+      {loading ? (
+        <p className="text-neutral-400">Carregando...</p>
+      ) : accounts.length === 0 ? (
+        <p className="text-neutral-400 text-sm">Nenhuma loja importada</p>
+      ) : (
+        <div className="space-y-2">
+          {accounts.map((account) => (
+            <div key={account.id} className="p-3 bg-neutral-800 rounded-md">
+              <p className="text-neutral-100 font-medium">{account.name}</p>
+              <p className="text-xs text-neutral-500">ID: {account.externalId}</p>
+              {account.lastSyncedAt && (
+                <p className="text-xs text-neutral-500">
+                  Última importação: {new Date(account.lastSyncedAt).toLocaleString("pt-BR")}
+                </p>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
