@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      accounts: accounts.map((acc) => ({
+      accounts: accounts.map((acc: any) => ({
         id: acc.id,
         name: acc.name,
         externalId: acc.externalId,
