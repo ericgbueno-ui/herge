@@ -45,7 +45,7 @@ export async function upsertDailyMetrics(
         },
       });
       campaignId = campaign.id;
-      campaignCache.set(metric.externalCampaignId, campaignId);
+      campaignCache.set(metric.externalCampaignId, campaignId as string);
     }
 
     await prisma.metricSnapshot.upsert({

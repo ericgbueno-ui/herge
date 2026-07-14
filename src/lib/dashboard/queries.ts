@@ -72,7 +72,8 @@ export async function getDailySpendSeries(days = 30): Promise<DailySpendPoint[]>
       byDate.set(dateKey, { date: dateKey, META: 0, GOOGLE: 0, TIKTOK: 0, SHOPEE: 0 });
     }
     const point = byDate.get(dateKey)!;
-    point[snap.campaign.adAccount.channel] += Number(snap.spend);
+    const channelKey = snap.campaign.adAccount.channel as keyof Omit<DailySpendPoint, "date">;
+    point[channelKey] += Number(snap.spend);
   }
 
   return Array.from(byDate.values()).sort((a, b) => a.date.localeCompare(b.date));

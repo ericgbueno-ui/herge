@@ -125,11 +125,11 @@ export async function syncMetaAdAccountCampaigns(
             data: {
               campaignId: campaign.id,
               date: new Date(),
-              spend: parseFloat(insights.spend || "0"),
-              impressions: parseInt(insights.impressions || "0"),
-              clicks: parseInt(insights.clicks || "0"),
-              conversions: parseInt(insights.purchase_conversions || "0"),
-              conversionValue: parseFloat(insights.purchase_value || "0"),
+              spend: parseFloat(String(insights.spend ?? "0")),
+              impressions: parseInt(String(insights.impressions ?? "0")),
+              clicks: parseInt(String(insights.clicks ?? "0")),
+              conversions: parseInt(String(insights.purchase_conversions ?? "0")),
+              conversionValue: parseFloat(String(insights.purchase_value ?? "0")),
             },
           });
 
