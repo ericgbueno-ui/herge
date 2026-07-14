@@ -95,12 +95,21 @@ export default function ProjectsPage() {
               {selectedChannel ? "Selecione uma conta" : "Selecione o canal de ads"}
             </p>
           </div>
-          <Link
-            href="/settings"
-            className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
-          >
-            ⚙️ Configurações
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/meta-ads"
+              className="px-4 py-2 rounded-md bg-blue-900 hover:bg-blue-800 text-sm font-medium text-blue-100 transition-all"
+              title="Dashboard em tempo real do Meta Ads"
+            >
+              📘 Meta Ads Dashboard
+            </Link>
+            <Link
+              href="/settings"
+              className="px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
+            >
+              ⚙️ Configurações
+            </Link>
+          </div>
         </div>
 
         {/* Canais ou Contas */}
