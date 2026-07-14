@@ -11,7 +11,7 @@ interface ShopeeRow {
 }
 
 export async function parseShopeeCSV(csv: string): Promise<ShopeeRow[]> {
-  const lines = csv.split("\n").filter((line) => line.trim());
+  const lines = csv.split("\n").filter((line: any) => line.trim());
   const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
 
   const rows: ShopeeRow[] = [];

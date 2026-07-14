@@ -167,7 +167,7 @@ export async function getBenchmarkRanking(
   const perf = await getCampaignPerformance(period, customFrom, customTo);
 
   return perf
-    .filter((p) => p.conversions > 0) // Só campanhas que tiveram conversões
+    .filter((p: any) => p.conversions > 0) // Só campanhas que tiveram conversões
     .sort((a, b) => a.cpa - b.cpa) // Menor CPA primeiro (mais eficiente)
     .map((p, idx) => ({
       rank: idx + 1,

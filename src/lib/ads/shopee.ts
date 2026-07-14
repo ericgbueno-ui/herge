@@ -88,7 +88,7 @@ function parseNumber(value: string): number {
 }
 
 export function parseShopeeAdsCsv(csvContent: string): DailyCampaignMetric[] {
-  const lines = csvContent.split(/\r?\n/).filter((l) => l.trim().length > 0);
+  const lines = csvContent.split(/\r?\n/).filter((l: any) => l.trim().length > 0);
   if (lines.length < 2) return [];
 
   const headers = parseCsvLine(lines[0]).map(normalizeHeader);

@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
 
     // 3. No conversions for 3+ days
     const last3Days = snaps.slice(-3);
-    if (last3Days.length === 3 && last3Days.every((s) => s.conversions === 0)) {
+    if (last3Days.length === 3 && last3Days.every((s: any) => s.conversions === 0)) {
       await prisma.alert.create({
         data: {
           campaignId,

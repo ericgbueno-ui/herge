@@ -28,7 +28,7 @@ interface MetaInsightsResponse {
 function sumActionValue(actions: MetaAction[] | undefined, types: string[]): number {
   if (!actions) return 0;
   return actions
-    .filter((a) => types.includes(a.action_type))
+    .filter((a: any) => types.includes(a.action_type))
     .reduce((acc, a) => acc + Number(a.value ?? 0), 0);
 }
 
