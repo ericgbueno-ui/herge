@@ -22,10 +22,25 @@ export default function SettingsPage() {
   const [success, setSuccess] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({ token: "", id: "", name: "" });
+  const [pendingScrollChannel, setPendingScrollChannel] = useState<string | null>(null);
 
   useEffect(() => {
     fetchAllAccounts();
+
+    const params = new URLSearchParams(window.location.search);
+    const channel = params.get("channel");
+    if (channel && ["META", "GOOGLE", "TIKTOK", "SHOPEE"].includes(channel)) {
+      setShowForm(channel);
+      setPendingScrollChannel(channel);
+    }
   }, []);
+
+  useEffect(() => {
+    if (!loading && pendingScrollChannel) {
+      document.getElementById(`section-${pendingScrollChannel}`)?.scrollIntoView({ behavior: "auto", block: "start" });
+      setPendingScrollChannel(null);
+    }
+  }, [loading, pendingScrollChannel]);
 
   async function fetchAllAccounts() {
     try {
@@ -264,7 +279,7 @@ function ShopeeSection({
   };
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
+    <div id="section-SHOPEE" className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-lg font-semibold text-neutral-100">🛍️ Shopee Ads</h2>
@@ -389,7 +404,7 @@ function PlatformSection({
   tokenHint: string;
 }) {
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
+    <div id={`section-${channel}`} className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
           <h2 className="text-lg font-semibold text-neutral-100">{icon} {title}</h2>

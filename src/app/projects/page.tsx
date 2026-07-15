@@ -155,15 +155,15 @@ export default function ProjectsPage() {
               <p className="text-neutral-400">Carregando contas...</p>
             ) : accounts.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-neutral-400 mb-4">Nenhuma conta {selectedChannel === "META" ? "Meta Ads" : "disponível"} conectada</p>
-                {selectedChannel === "META" && (
-                  <Link
-                    href="/settings"
-                    className="inline-block px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
-                  >
-                    Conectar conta Meta Ads
-                  </Link>
-                )}
+                <p className="text-neutral-400 mb-4">
+                  Nenhuma conta {CHANNELS.find((c) => c.id === selectedChannel)?.name} conectada
+                </p>
+                <Link
+                  href={`/settings?channel=${selectedChannel}`}
+                  className="inline-block px-4 py-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-sm font-medium text-neutral-300 transition-all"
+                >
+                  Conectar conta {CHANNELS.find((c) => c.id === selectedChannel)?.name}
+                </Link>
               </div>
             ) : (
               <div className="space-y-3">
