@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { KpiCard } from "@/components/dashboard/kpi-card";
 import { SpendChart } from "@/components/dashboard/spend-chart";
 import { PeriodSelector } from "@/components/dashboard/period-selector";
@@ -12,17 +13,25 @@ const currency = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "
 const number = new Intl.NumberFormat("pt-BR");
 
 export default function DashboardPage() {
+  const router = useRouter();
   const [period, setPeriod] = useState<PeriodType>("30d");
   const [campaigns, setCampaigns] = useState<any[]>([]);
   const [funnel, setFunnel] = useState<any[]>([]);
   const [ranking, setRanking] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [projectName, setProjectName] = useState<string>("Projeto");
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Carregar nome do projeto com base no channel e account
-    const channel = localStorage.getItem("selectedChannel") || "UNKNOWN";
-    const accountId = localStorage.getItem("selectedAccount") || "unknown";
+    // Exige canal e conta selecionados; sem isso, volta para a seleção
+    const channel = localStorage.getItem("selectedChannel");
+    const accountId = localStorage.getItem("selectedAccount");
+
+    if (!channel || !accountId) {
+      router.push("/projects");
+      return;
+    }
+    setReady(true);
 
     const accountNames: Record<string, Record<string, string>> = {
       META: {
@@ -82,6 +91,12 @@ export default function DashboardPage() {
   const totalConversionValue = campaigns.reduce((acc, c) => acc + c.conversionValue, 0);
   const avgCPA = totalConversions > 0 ? totalSpend / totalConversions : null;
   const roas = totalSpend > 0 ? totalConversionValue / totalSpend : null;
+
+  if (!ready) {
+    return (
+      <div className="text-center text-neutral-400">Redirecionando...</div>
+    );
+  }
 
   return (
     <div className="space-y-6">
