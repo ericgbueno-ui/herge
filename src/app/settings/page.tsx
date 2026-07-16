@@ -521,6 +521,8 @@ function PlatformSection({
   tokenHint: string;
   extra?: React.ReactNode;
 }) {
+  const [showToken, setShowToken] = useState(false);
+
   return (
     <div id={`section-${channel}`} className="rounded-lg border border-neutral-800 bg-neutral-900 p-6">
       <div className="flex justify-between items-center mb-6">
@@ -543,14 +545,23 @@ function PlatformSection({
         <form onSubmit={onSubmit} className="space-y-4 mb-6 p-4 bg-neutral-800 rounded-md">
           <div>
             <label className="block text-sm text-neutral-300 mb-1">{tokenLabel}</label>
-            <input
-              type="password"
-              value={formData.token}
-              onChange={(e) => setFormData({ ...formData, token: e.target.value })}
-              placeholder={tokenPlaceholder}
-              className="w-full px-3 py-2 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
-              required
-            />
+            <div className="relative">
+              <input
+                type={showToken ? "text" : "password"}
+                value={formData.token}
+                onChange={(e) => setFormData({ ...formData, token: e.target.value })}
+                placeholder={tokenPlaceholder}
+                className="w-full px-3 py-2 pr-10 rounded-md border border-neutral-700 bg-neutral-700 text-neutral-100 text-sm"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowToken(!showToken)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-200"
+              >
+                {showToken ? "👁️" : "👁️‍🗨️"}
+              </button>
+            </div>
             <p className="text-xs text-neutral-500 mt-1">{tokenHint}</p>
           </div>
 
