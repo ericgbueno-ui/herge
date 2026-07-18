@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { syncTikTokAdsCampaigns } from "@/lib/tiktok-ads/sync";
+import { syncTikTokAdAccount } from "@/lib/tiktok-ads/sync";
 
 export const maxDuration = 300;
+export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
   const secret = req.headers.get("Authorization")?.replace("Bearer ", "");
@@ -16,7 +17,13 @@ export async function GET(req: NextRequest) {
         channel: "TIKTOK",
         accessToken: { not: null },
       },
-      include: { user: true },
+      select: {
+        id: true,
+        name: true,
+        externalAccountId: true,
+        accessToken: true,
+        companyId: true,
+      },
     });
 
     console.log(`Syncing ${tiktokAccounts.length} TikTok Ads accounts...`);
@@ -25,23 +32,26 @@ export async function GET(req: NextRequest) {
 
     for (const account of tiktokAccounts) {
       if (!account.accessToken) continue;
-
-      const result = await syncTikTokAdsCampaigns(
-        account.userId,
-        account.externalId,
-        account.accessToken
-      );
-
-      results.push({
-        accountId: account.externalId,
-        accountName: account.name,
-        ...result,
-      });
+      try {
+        const result = await syncTikTokAdAccount({
+          id: account.id,
+          externalAccountId: account.externalAccountId,
+          accessToken: account.accessToken,
+          companyId: account.companyId,
+        });
+        results.push({ account: account.name, ok: true, ...result });
+      } catch (err) {
+        results.push({
+          account: account.name,
+          ok: false,
+          error: (err as Error).message,
+        });
+      }
     }
 
     return NextResponse.json({
       ok: true,
-      message: `Synced ${results.length} TikTok Ads accounts`,
+      message: `Synced ${results.filter((r) => r.ok).length}/${results.length} TikTok Ads accounts`,
       results,
     });
   } catch (err) {

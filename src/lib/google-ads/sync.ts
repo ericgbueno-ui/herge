@@ -1,115 +1,24 @@
 import { prisma } from "@/lib/prisma";
 
-interface GoogleAdsCampaign {
-  resourceName: string;
+const GOOGLE_ADS_API = "https://googleads.googleapis.com/v17";
+
+interface SyncableGoogleAccount {
   id: string;
-  name: string;
-  status: string;
+  externalAccountId: string;
+  refreshToken: string;
+  companyId: string | null;
+  loginCustomerId?: string | null;
 }
 
-interface GoogleAdsMetrics {
-  cost: string;
-  impressions: string;
-  clicks: string;
-  conversions: string;
-  conversionValue: string;
-}
-
-export async function fetchGoogleAdsCampaigns(
-  customerId: string,
-  refreshToken: string
-): Promise<GoogleAdsCampaign[]> {
-  try {
-    // Get access token from refresh token
-    const accessToken = await getGoogleAdsAccessToken(refreshToken);
-    if (!accessToken) return [];
-
-    const query = `
-      SELECT campaign.id, campaign.name, campaign.status
-      FROM campaign
-      ORDER BY campaign.id
-    `;
-
-    const response = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "",
-        },
-        body: JSON.stringify({ query }),
-      }
-    );
-
-    if (!response.ok) {
-      console.error("Google Ads API error:", response.statusText);
-      return [];
-    }
-
-    const data = await response.json();
-    return (data.results || []).map((r: any) => ({
-      resourceName: r.campaign.resourceName,
-      id: r.campaign.id,
-      name: r.campaign.name,
-      status: r.campaign.status,
-    }));
-  } catch (err) {
-    console.error("Failed to fetch Google Ads campaigns:", err);
-    return [];
-  }
-}
-
-export async function fetchCampaignMetrics(
-  customerId: string,
-  campaignId: string,
-  refreshToken: string,
-  dateStart: string,
-  dateEnd: string
-): Promise<GoogleAdsMetrics | null> {
-  try {
-    const accessToken = await getGoogleAdsAccessToken(refreshToken);
-    if (!accessToken) return null;
-
-    const query = `
-      SELECT campaign.id, metrics.cost_micros, metrics.impressions,
-             metrics.clicks, metrics.conversions, metrics.conversion_value
-      FROM campaign
-      WHERE campaign.id = '${campaignId}'
-        AND segments.date BETWEEN '${dateStart}' AND '${dateEnd}'
-    `;
-
-    const response = await fetch(
-      `https://googleads.googleapis.com/v17/customers/${customerId}/googleAds:search`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-          "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "",
-        },
-        body: JSON.stringify({ query }),
-      }
-    );
-
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    if (!data.results || data.results.length === 0) return null;
-
-    const metrics = data.results[0].metrics;
-    return {
-      cost: (parseInt(metrics.cost_micros || "0") / 1_000_000).toString(),
-      impressions: metrics.impressions || "0",
-      clicks: metrics.clicks || "0",
-      conversions: metrics.conversions || "0",
-      conversionValue: metrics.conversion_value || "0",
-    };
-  } catch (err) {
-    console.error("Failed to fetch campaign metrics:", err);
-    return null;
-  }
+interface DailyRow {
+  campaignId: string;
+  campaignName: string;
+  date: string;
+  costMicros: number;
+  impressions: number;
+  clicks: number;
+  conversions: number;
+  conversionValue: number;
 }
 
 async function getGoogleAdsAccessToken(refreshToken: string): Promise<string | null> {
@@ -135,80 +44,142 @@ async function getGoogleAdsAccessToken(refreshToken: string): Promise<string | n
   }
 }
 
-export async function syncGoogleAdsCampaigns(
-  userId: string,
-  customerId: string,
-  refreshToken: string
-) {
-  try {
-    const campaigns = await fetchGoogleAdsCampaigns(customerId, refreshToken);
+/**
+ * Busca métricas diárias por campanha em uma única query GAQL.
+ */
+async function fetchDailyCampaignMetrics(
+  account: SyncableGoogleAccount,
+  accessToken: string,
+  dateStart: string,
+  dateEnd: string
+): Promise<DailyRow[]> {
+  const customerId = account.externalAccountId.replace(/-/g, "");
+  const query = `
+    SELECT campaign.id, campaign.name, segments.date,
+           metrics.cost_micros, metrics.impressions, metrics.clicks,
+           metrics.conversions, metrics.conversions_value
+    FROM campaign
+    WHERE segments.date BETWEEN '${dateStart}' AND '${dateEnd}'
+    ORDER BY segments.date
+  `;
 
-    if (campaigns.length === 0) {
-      console.log(`No campaigns found for Google Ads customer ${customerId}`);
-      return { synced: 0, errors: 0 };
-    }
-
-    const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const dateStart = startDate.toISOString().split("T")[0];
-    const dateEnd = endDate.toISOString().split("T")[0];
-
-    let synced = 0;
-    let errors = 0;
-
-    for (const campaign of campaigns) {
-      try {
-        const dbCampaign = await prisma.campaign.upsert({
-          where: { externalId: campaign.id },
-          update: {
-            name: campaign.name,
-            status: campaign.status,
-          },
-          create: {
-            externalId: campaign.id,
-            name: campaign.name,
-            status: campaign.status,
-            adAccountId: customerId,
-          },
-        });
-
-        const metrics = await fetchCampaignMetrics(
-          customerId,
-          campaign.id,
-          refreshToken,
-          dateStart,
-          dateEnd
-        );
-
-        if (metrics) {
-          await prisma.metricSnapshot.create({
-            data: {
-              campaignId: dbCampaign.id,
-              date: new Date(),
-              spend: parseFloat(metrics.cost),
-              impressions: parseInt(metrics.impressions),
-              clicks: parseInt(metrics.clicks),
-              conversions: parseInt(metrics.conversions),
-              conversionValue: parseFloat(metrics.conversionValue),
-            },
-          });
-
-          synced++;
-        }
-      } catch (err) {
-        console.error(`Error syncing Google Ads campaign ${campaign.id}:`, err);
-        errors++;
-      }
-    }
-
-    await prisma.adAccount.update({
-      where: { externalId: customerId },
-      data: { lastSyncedAt: new Date() },
-    });
-
-    return { synced, errors };
-  } catch (err) {
-    console.error("Failed to sync Google Ads campaigns:", err);
-    return { synced: 0, errors: 1 };
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    "developer-token": process.env.GOOGLE_ADS_DEVELOPER_TOKEN || "",
+  };
+  if (account.loginCustomerId) {
+    headers["login-customer-id"] = account.loginCustomerId.replace(/-/g, "");
   }
+
+  const rows: DailyRow[] = [];
+  let pageToken: string | undefined;
+
+  do {
+    const response = await fetch(
+      `${GOOGLE_ADS_API}/customers/${customerId}/googleAds:search`,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ query, pageToken }),
+      }
+    );
+
+    const data = await response.json();
+    if (!response.ok) {
+      const message =
+        data.error?.message || data[0]?.error?.message || `Google Ads API error: ${response.status}`;
+      throw new Error(message);
+    }
+
+    for (const r of data.results || []) {
+      rows.push({
+        campaignId: String(r.campaign.id),
+        campaignName: r.campaign.name,
+        date: r.segments.date,
+        costMicros: parseInt(r.metrics.costMicros || r.metrics.cost_micros || "0"),
+        impressions: parseInt(r.metrics.impressions || "0"),
+        clicks: parseInt(r.metrics.clicks || "0"),
+        conversions: Math.round(parseFloat(r.metrics.conversions || "0")),
+        conversionValue: parseFloat(r.metrics.conversionsValue || r.metrics.conversions_value || "0"),
+      });
+    }
+    pageToken = data.nextPageToken;
+  } while (pageToken);
+
+  return rows;
+}
+
+/**
+ * Sincroniza campanhas e métricas diárias de uma conta Google Ads.
+ */
+export async function syncGoogleAdsAccount(
+  account: SyncableGoogleAccount,
+  days = 30
+): Promise<{ campaigns: number; snapshots: number }> {
+  const accessToken = await getGoogleAdsAccessToken(account.refreshToken);
+  if (!accessToken) {
+    throw new Error("Não foi possível obter access token do Google Ads");
+  }
+
+  const end = new Date();
+  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const dateStart = start.toISOString().slice(0, 10);
+  const dateEnd = end.toISOString().slice(0, 10);
+
+  const rows = await fetchDailyCampaignMetrics(account, accessToken, dateStart, dateEnd);
+
+  const campaignIds = new Map<string, string>();
+  let snapshots = 0;
+
+  for (const row of rows) {
+    let campaignId = campaignIds.get(row.campaignId);
+    if (!campaignId) {
+      const campaign = await prisma.campaign.upsert({
+        where: {
+          adAccountId_externalCampaignId: {
+            adAccountId: account.id,
+            externalCampaignId: row.campaignId,
+          },
+        },
+        update: { name: row.campaignName, companyId: account.companyId ?? undefined },
+        create: {
+          adAccountId: account.id,
+          externalCampaignId: row.campaignId,
+          name: row.campaignName,
+          companyId: account.companyId,
+        },
+      });
+      campaignId = campaign.id;
+      campaignIds.set(row.campaignId, campaignId);
+    }
+
+    await prisma.metricSnapshot.upsert({
+      where: { campaignId_date: { campaignId, date: new Date(row.date) } },
+      update: {
+        spend: row.costMicros / 1_000_000,
+        impressions: row.impressions,
+        clicks: row.clicks,
+        conversions: row.conversions,
+        conversionValue: row.conversionValue,
+      },
+      create: {
+        campaignId,
+        date: new Date(row.date),
+        spend: row.costMicros / 1_000_000,
+        impressions: row.impressions,
+        clicks: row.clicks,
+        conversions: row.conversions,
+        conversionValue: row.conversionValue,
+      },
+    });
+    snapshots++;
+  }
+
+  await prisma.adAccount.update({
+    where: { id: account.id },
+    data: { lastSyncedAt: new Date() },
+  });
+
+  return { campaigns: campaignIds.size, snapshots };
 }

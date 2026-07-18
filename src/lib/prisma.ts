@@ -22,14 +22,11 @@ export function getPrisma() {
   return prismaInstance;
 }
 
-// For backward compatibility
-export const prisma = {
-  get user() { return getPrisma().user; },
-  get account() { return getPrisma().account; },
-  get session() { return getPrisma().session; },
-  get adAccount() { return getPrisma().adAccount; },
-  get campaign() { return getPrisma().campaign; },
-  get metricSnapshot() { return getPrisma().metricSnapshot; },
-  get conversionEvent() { return getPrisma().conversionEvent; },
-  get alert() { return getPrisma().alert; },
-} as any;
+// Proxy preguiçoso: expõe todos os modelos do client (lead, sale, company, etc.)
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    const client = getPrisma() as any;
+    const value = client?.[prop];
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+}) as PrismaClient;

@@ -3,164 +3,140 @@ import { prisma } from "@/lib/prisma";
 const TIKTOK_API_VERSION = "v1.3";
 const TIKTOK_API_BASE = "https://business-api.tiktok.com/open_api";
 
-interface TikTokCampaign {
-  campaign_id: string;
-  campaign_name: string;
-  campaign_status: string;
+interface SyncableTikTokAccount {
+  id: string;
+  externalAccountId: string; // advertiser_id
+  accessToken: string;
+  companyId: string | null;
 }
 
-interface TikTokMetrics {
-  spend: number;
-  impressions: number;
-  clicks: number;
-  conversions: number;
-  conversion_value: number;
+interface TikTokDailyRow {
+  dimensions: { campaign_id: string; stat_time_day: string };
+  metrics: {
+    campaign_name?: string;
+    spend?: string;
+    impressions?: string;
+    clicks?: string;
+    conversion?: string;
+    total_complete_payment_value?: string;
+  };
 }
 
-export async function fetchTikTokCampaigns(
-  accessToken: string,
-  advertiserId: string
-): Promise<TikTokCampaign[]> {
-  try {
-    const response = await fetch(
-      `${TIKTOK_API_BASE}/${TIKTOK_API_VERSION}/campaign/get?` +
-      `advertiser_id=${advertiserId}&fields=campaign_id,campaign_name,campaign_status`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    if (!response.ok) {
-      console.error("TikTok API error:", response.statusText);
-      return [];
-    }
-
-    const data = await response.json();
-    return data.data?.list || [];
-  } catch (err) {
-    console.error("Failed to fetch TikTok campaigns:", err);
-    return [];
-  }
-}
-
-export async function fetchCampaignMetrics(
-  accessToken: string,
-  advertiserId: string,
-  campaignId: string,
+/**
+ * Relatório integrado diário por campanha (uma chamada paginada por conta).
+ */
+async function fetchTikTokDailyReport(
+  account: SyncableTikTokAccount,
   dateStart: string,
   dateEnd: string
-): Promise<TikTokMetrics | null> {
-  try {
-    const response = await fetch(
-      `${TIKTOK_API_BASE}/${TIKTOK_API_VERSION}/analytics/campaign/?` +
-      `advertiser_id=${advertiserId}&` +
-      `campaign_ids=[${campaignId}]&` +
-      `start_date=${dateStart}&end_date=${dateEnd}&` +
-      `fields=spend,impressions,clicks,conversions,conversion_value`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+): Promise<TikTokDailyRow[]> {
+  const rows: TikTokDailyRow[] = [];
+  let page = 1;
+  let totalPages = 1;
 
-    if (!response.ok) return null;
-
-    const data = await response.json();
-    if (!data.data?.list || data.data.list.length === 0) return null;
-
-    const metrics = data.data.list[0];
-    return {
-      spend: parseFloat(metrics.spend || "0"),
-      impressions: parseInt(metrics.impressions || "0"),
-      clicks: parseInt(metrics.clicks || "0"),
-      conversions: parseInt(metrics.conversions || "0"),
-      conversion_value: parseFloat(metrics.conversion_value || "0"),
-    };
-  } catch (err) {
-    console.error("Failed to fetch TikTok campaign metrics:", err);
-    return null;
-  }
-}
-
-export async function syncTikTokAdsCampaigns(
-  userId: string,
-  advertiserId: string,
-  accessToken: string
-) {
-  try {
-    const campaigns = await fetchTikTokCampaigns(accessToken, advertiserId);
-
-    if (campaigns.length === 0) {
-      console.log(`No campaigns found for TikTok advertiser ${advertiserId}`);
-      return { synced: 0, errors: 0 };
-    }
-
-    const endDate = new Date();
-    const startDate = new Date(endDate.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const dateStart = startDate.toISOString().split("T")[0];
-    const dateEnd = endDate.toISOString().split("T")[0];
-
-    let synced = 0;
-    let errors = 0;
-
-    for (const campaign of campaigns) {
-      try {
-        const dbCampaign = await prisma.campaign.upsert({
-          where: { externalId: campaign.campaign_id },
-          update: {
-            name: campaign.campaign_name,
-            status: campaign.campaign_status,
-          },
-          create: {
-            externalId: campaign.campaign_id,
-            name: campaign.campaign_name,
-            status: campaign.campaign_status,
-            adAccountId: advertiserId,
-          },
-        });
-
-        const metrics = await fetchCampaignMetrics(
-          accessToken,
-          advertiserId,
-          campaign.campaign_id,
-          dateStart,
-          dateEnd
-        );
-
-        if (metrics) {
-          await prisma.metricSnapshot.create({
-            data: {
-              campaignId: dbCampaign.id,
-              date: new Date(),
-              spend: metrics.spend,
-              impressions: metrics.impressions,
-              clicks: metrics.clicks,
-              conversions: metrics.conversions,
-              conversionValue: metrics.conversion_value,
-            },
-          });
-
-          synced++;
-        }
-      } catch (err) {
-        console.error(`Error syncing TikTok campaign ${campaign.campaign_id}:`, err);
-        errors++;
-      }
-    }
-
-    await prisma.adAccount.update({
-      where: { externalId: advertiserId },
-      data: { lastSyncedAt: new Date() },
+  while (page <= totalPages) {
+    const params = new URLSearchParams({
+      advertiser_id: account.externalAccountId,
+      report_type: "BASIC",
+      data_level: "AUCTION_CAMPAIGN",
+      dimensions: JSON.stringify(["campaign_id", "stat_time_day"]),
+      metrics: JSON.stringify([
+        "campaign_name",
+        "spend",
+        "impressions",
+        "clicks",
+        "conversion",
+        "total_complete_payment_value",
+      ]),
+      start_date: dateStart,
+      end_date: dateEnd,
+      page: String(page),
+      page_size: "200",
     });
 
-    return { synced, errors };
-  } catch (err) {
-    console.error("Failed to sync TikTok campaigns:", err);
-    return { synced: 0, errors: 1 };
+    const response = await fetch(
+      `${TIKTOK_API_BASE}/${TIKTOK_API_VERSION}/report/integrated/get/?${params}`,
+      { headers: { "Access-Token": account.accessToken } }
+    );
+
+    const data = await response.json();
+    if (!response.ok || data.code !== 0) {
+      throw new Error(data.message || `TikTok API error: ${response.status}`);
+    }
+
+    rows.push(...(data.data?.list || []));
+    totalPages = data.data?.page_info?.total_page || 1;
+    page++;
   }
+
+  return rows;
+}
+
+/**
+ * Sincroniza campanhas e métricas diárias de um advertiser TikTok.
+ */
+export async function syncTikTokAdAccount(
+  account: SyncableTikTokAccount,
+  days = 30
+): Promise<{ campaigns: number; snapshots: number }> {
+  const end = new Date();
+  const start = new Date(end.getTime() - days * 24 * 60 * 60 * 1000);
+  const dateStart = start.toISOString().slice(0, 10);
+  const dateEnd = end.toISOString().slice(0, 10);
+
+  const rows = await fetchTikTokDailyReport(account, dateStart, dateEnd);
+
+  const campaignIds = new Map<string, string>();
+  let snapshots = 0;
+
+  for (const row of rows) {
+    const extId = row.dimensions.campaign_id;
+    let campaignId = campaignIds.get(extId);
+    if (!campaignId) {
+      const campaign = await prisma.campaign.upsert({
+        where: {
+          adAccountId_externalCampaignId: {
+            adAccountId: account.id,
+            externalCampaignId: extId,
+          },
+        },
+        update: {
+          name: row.metrics.campaign_name || extId,
+          companyId: account.companyId ?? undefined,
+        },
+        create: {
+          adAccountId: account.id,
+          externalCampaignId: extId,
+          name: row.metrics.campaign_name || extId,
+          companyId: account.companyId,
+        },
+      });
+      campaignId = campaign.id;
+      campaignIds.set(extId, campaignId);
+    }
+
+    // stat_time_day vem como "2026-07-18 00:00:00"
+    const date = new Date(row.dimensions.stat_time_day.slice(0, 10));
+    const payload = {
+      spend: parseFloat(row.metrics.spend || "0"),
+      impressions: parseInt(row.metrics.impressions || "0"),
+      clicks: parseInt(row.metrics.clicks || "0"),
+      conversions: parseInt(row.metrics.conversion || "0"),
+      conversionValue: parseFloat(row.metrics.total_complete_payment_value || "0"),
+    };
+
+    await prisma.metricSnapshot.upsert({
+      where: { campaignId_date: { campaignId, date } },
+      update: payload,
+      create: { campaignId, date, ...payload },
+    });
+    snapshots++;
+  }
+
+  await prisma.adAccount.update({
+    where: { id: account.id },
+    data: { lastSyncedAt: new Date() },
+  });
+
+  return { campaigns: campaignIds.size, snapshots };
 }
