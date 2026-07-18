@@ -39,37 +39,37 @@ export const FORMAT_LABEL: Record<CreativeFormat, string> = {
 export const CHANNELS: ChannelData[] = [
   {
     key: "META", name: "Meta Ads", color: "#2563eb",
-    spend: 4820.5, impressions: 312450, reach: 184300, clicks: 6120, msgs: 852, leads: 236, sales: 19, revenue: 11240,
+    spend: 8750.85, impressions: 526000, reach: 284500, clicks: 12840, msgs: 1264, leads: 412, sales: 48, revenue: 28560,
     creatives: [
-      { format: "VID", copy: "COPY A", spend: 1680, impressions: 128000, clicks: 2650, msgs: 372, sales: 9, revenue: 5320 },
-      { format: "IMG", copy: "COPY A", spend: 1120, impressions: 82000, clicks: 1480, msgs: 198, sales: 4, revenue: 2360 },
-      { format: "CAR", copy: "TEXTO 1", spend: 1290, impressions: 74000, clicks: 1360, msgs: 214, sales: 5, revenue: 2960 },
-      { format: "COL", copy: "TEXTO 2", spend: 730.5, impressions: 28450, clicks: 630, msgs: 68, sales: 1, revenue: 600 },
+      { format: "VID", copy: "GRAMADO - TOUR", spend: 3200, impressions: 210000, clicks: 5600, msgs: 520, sales: 18, revenue: 11240 },
+      { format: "IMG", copy: "TRANSFER POA", spend: 2400, impressions: 156000, clicks: 3840, msgs: 312, sales: 14, revenue: 8680 },
+      { format: "CAR", copy: "HOTÉIS 5 ESTRELAS", spend: 1850, impressions: 98000, clicks: 2100, msgs: 280, sales: 11, revenue: 6480 },
+      { format: "VID", copy: "EXPERIÊNCIA SNOWLAND", spend: 1300, impressions: 62000, clicks: 1300, msgs: 152, sales: 5, revenue: 2160 },
     ],
   },
   {
     key: "GOOGLE", name: "Google Ads", color: "#10b981",
-    spend: 2140, impressions: 96500, reach: 71200, clicks: 2380, msgs: 91, leads: 58, sales: 5, revenue: 3120,
+    spend: 4290.50, impressions: 184000, reach: 125800, clicks: 6240, msgs: 284, leads: 168, sales: 22, revenue: 12840,
     creatives: [
-      { format: "VID", copy: "YT BUMPER", spend: 640, impressions: 41000, clicks: 720, msgs: 34, sales: 2, revenue: 1240 },
-      { format: "IMG", copy: "DISPLAY A", spend: 720, impressions: 33500, clicks: 910, msgs: 31, sales: 2, revenue: 1180 },
-      { format: "CAR", copy: "PMAX", spend: 780, impressions: 22000, clicks: 750, msgs: 26, sales: 1, revenue: 700 },
+      { format: "VID", copy: "YT - GRAMADO TURISMO", spend: 1650, impressions: 68000, clicks: 2200, msgs: 112, sales: 9, revenue: 5280 },
+      { format: "IMG", copy: "SEARCH - HOTÉIS", spend: 1580, impressions: 62000, clicks: 2180, msgs: 98, sales: 8, revenue: 4680 },
+      { format: "CAR", copy: "PMAX - PACOTES", spend: 1060, impressions: 54000, clicks: 1860, msgs: 74, sales: 5, revenue: 2880 },
     ],
   },
   {
     key: "TIKTOK", name: "TikTok Ads", color: "#0ea5e9",
-    spend: 980, impressions: 141000, reach: 98700, clicks: 3200, msgs: 47, leads: 22, sales: 2, revenue: 980,
+    spend: 2180.40, impressions: 342000, reach: 215600, clicks: 8940, msgs: 156, leads: 92, sales: 16, revenue: 7480,
     creatives: [
-      { format: "VID", copy: "UGC 1", spend: 620, impressions: 98000, clicks: 2200, msgs: 33, sales: 2, revenue: 980 },
-      { format: "VID", copy: "UGC 2", spend: 360, impressions: 43000, clicks: 1000, msgs: 14, sales: 0, revenue: 0 },
+      { format: "VID", copy: "UGC VIAGEM", spend: 1300, impressions: 215000, clicks: 5800, msgs: 98, sales: 11, revenue: 5120 },
+      { format: "VID", copy: "TREND DESCOBERTA", spend: 880, impressions: 127000, clicks: 3140, msgs: 58, sales: 5, revenue: 2360 },
     ],
   },
   {
     key: "SHOPEE", name: "Shopee Ads", color: "#f97316",
-    spend: 540, impressions: 62000, reach: 40100, clicks: 1450, msgs: 0, leads: 0, sales: 8, revenue: 1980,
+    spend: 1580.25, impressions: 412000, reach: 268900, clicks: 9280, msgs: 0, leads: 0, sales: 42, revenue: 8960,
     creatives: [
-      { format: "IMG", copy: "PRODUTO A", spend: 300, impressions: 38000, clicks: 900, msgs: 0, sales: 5, revenue: 1240 },
-      { format: "IMG", copy: "PRODUTO B", spend: 240, impressions: 24000, clicks: 550, msgs: 0, sales: 3, revenue: 740 },
+      { format: "IMG", copy: "VOUCHER HOSPEDAGEM", spend: 890, impressions: 256000, clicks: 5600, msgs: 0, sales: 28, revenue: 5960 },
+      { format: "IMG", copy: "PACOTE COMPLETO", spend: 690, impressions: 156000, clicks: 3680, msgs: 0, sales: 14, revenue: 3000 },
     ],
   },
 ];
