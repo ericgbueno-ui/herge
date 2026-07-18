@@ -1,7 +1,14 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-const PROTECTED_PATHS = ["/dashboard", "/projects", "/meta-ads", "/settings"];
+const PROTECTED_PATHS = [
+  "/dashboard",
+  "/loading",
+  "/companies",
+  "/projects",
+  "/meta-ads",
+  "/settings",
+];
 
 export const proxy = auth((req: any) => {
   const { pathname } = req.nextUrl;
@@ -17,6 +24,8 @@ export const proxy = auth((req: any) => {
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/loading",
+    "/companies/:path*",
     "/projects/:path*",
     "/meta-ads/:path*",
     "/settings/:path*",

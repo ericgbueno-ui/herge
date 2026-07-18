@@ -14,8 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Hergé",
-  description: "Dashboard de métricas de campanhas — Meta, Google, TikTok, Shopee Ads",
+  title: "Hergé Enterprise",
+  description:
+    "Plataforma enterprise de inteligência comercial, mídia e operação multiempresa.",
 };
 
 export default function RootLayout({
@@ -25,10 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <Providers>{children}</Providers>
       </body>
     </html>

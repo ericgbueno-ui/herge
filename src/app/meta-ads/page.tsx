@@ -113,10 +113,10 @@ export default function MetaAdsPage() {
             Hergé
           </Link>
           <div className="flex gap-3">
-            <Link href="/projects" className="px-4 py-2 text-sm bg-white ring-1 ring-slate-200 hover:ring-indigo-300 rounded-xl shadow-sm transition text-slate-600">
+            <Link href="/dashboard" className="px-4 py-2 text-sm bg-white ring-1 ring-slate-200 hover:ring-indigo-300 rounded-xl shadow-sm transition text-slate-600">
               ← Voltar uma seção
             </Link>
-            <Link href="/projects" className="text-sm text-slate-400 hover:text-indigo-600 self-center">
+            <Link href="/dashboard" className="text-sm text-slate-400 hover:text-indigo-600 self-center">
               Canais
             </Link>
           </div>

@@ -1,6 +1,10 @@
 import { Sidebar } from "@/components/Sidebar";
 
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#050816] text-slate-100">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(251,191,36,0.08),_transparent_30%),radial-gradient(circle_at_top_right,_rgba(59,130,246,0.12),_transparent_28%),linear-gradient(180deg,_rgba(6,10,19,0.94),_rgba(5,8,22,1))]" />
@@ -11,7 +15,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         style={{ animationDelay: "5s" }}
       />
       <Sidebar />
-      <div className="relative min-h-screen pl-64">{children}</div>
+      <div className="relative min-h-screen pl-72">{children}</div>
     </div>
   );
 }

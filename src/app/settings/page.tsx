@@ -108,7 +108,7 @@ export default function SettingsPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <Link href="/projects" className="text-sm text-slate-500 hover:text-indigo-600 mb-4 inline-block">
+        <Link href="/dashboard" className="text-sm text-slate-500 hover:text-indigo-600 mb-4 inline-block">
           ← Voltar
         </Link>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">Configurações</h1>
