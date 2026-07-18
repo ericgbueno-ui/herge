@@ -44,6 +44,17 @@ export async function GET(req: NextRequest) {
       fetchMetaCampaigns(accessToken, accountId, dateStart, dateEnd),
     ]);
 
+    // Check if we got any data
+    if (insights.length === 0 && campaigns.length === 0) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "No data received from Meta Ads API. Check your credentials and account permissions."
+        },
+        { status: 400 }
+      );
+    }
+
     // Calculate totals
     const totals = calculateTotals(insights);
     const metrics = calculateMetrics(totals);
