@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Header } from "@/components/Header";
+import { Sidebar } from "@/components/Sidebar";
+import { KPICard } from "@/components/KPICard";
 import {
   CHANNELS as DEMO,
   FORMAT_LABEL,
