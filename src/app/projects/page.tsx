@@ -143,20 +143,36 @@ export default function ProjectsPage() {
               <button
                 key={channel.id}
                 onClick={() => setSelectedChannel(channel.id)}
-                className={`group text-left p-8 rounded-2xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-[0_8px_30px_-15px_rgba(15,23,42,0.15)] transition-all hover:-translate-y-0.5 hover:shadow-[0_20px_40px_-20px_rgba(79,70,229,0.35)] ${channel.ring}`}
+                className={`group relative overflow-hidden text-left rounded-3xl bg-white/80 backdrop-blur-sm ring-1 ring-slate-200/70 shadow-[0_8px_30px_-15px_rgba(15,23,42,0.15)] transition-all hover:-translate-y-1 hover:shadow-[0_20px_50px_-20px_rgba(79,70,229,0.4)] ${channel.ring}`}
               >
-                <div className="mb-4">
+                {/* Logo Background */}
+                <div className="absolute inset-0 flex items-center justify-center opacity-5 group-hover:opacity-10 transition-opacity">
                   <Image
                     src={channel.image}
-                    alt={channel.name}
-                    width={56}
-                    height={56}
-                    className="rounded-2xl shadow-md"
+                    alt=""
+                    width={300}
+                    height={300}
+                    className="w-96 h-96 object-cover"
                   />
                 </div>
-                <h2 className="text-2xl font-bold text-slate-900 mb-1">{channel.name}</h2>
-                <p className="text-slate-500">{channel.description}</p>
-                <div className="mt-6 text-slate-300 transition group-hover:translate-x-1 group-hover:text-indigo-500">→</div>
+
+                {/* Content */}
+                <div className="relative p-8">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div className="h-20 w-20 flex items-center justify-center">
+                      <Image
+                        src={channel.image}
+                        alt={channel.name}
+                        width={80}
+                        height={80}
+                        className="object-contain drop-shadow-lg"
+                      />
+                    </div>
+                    <div className="text-slate-300 text-3xl transition group-hover:translate-x-2 group-hover:text-indigo-400">→</div>
+                  </div>
+                  <h2 className="text-2xl font-bold text-slate-900 mb-2">{channel.name}</h2>
+                  <p className="text-sm text-slate-500 leading-relaxed">{channel.description}</p>
+                </div>
               </button>
             ))}
           </div>
