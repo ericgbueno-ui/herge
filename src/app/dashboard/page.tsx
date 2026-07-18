@@ -150,8 +150,7 @@ export default function DashboardPage() {
   // modal marcar venda
   const [saleFor, setSaleFor] = useState<Acct | null>(null);
   const [amount, setAmount] = useState("");
-  const [phone, setPhone] = useState("");
-  const [note, setNote] = useState("");
+  const [vehicleType, setVehicleType] = useState<"spin" | "sedan">("spin");
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState("");
 
@@ -204,11 +203,11 @@ export default function DashboardPage() {
       const r = await fetch("/api/sales", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ account: saleFor.id, accountName: saleFor.name, channel: "META", amount: value, phone: phone || undefined, note: note || undefined }),
+        body: JSON.stringify({ account: saleFor.id, accountName: saleFor.name, channel: "META", amount: value, vehicleType }),
       });
       const j = await r.json();
       if (!r.ok) throw new Error(j?.error || "Falha ao salvar");
-      setSaleFor(null); setAmount(""); setPhone(""); setNote("");
+      setSaleFor(null); setAmount(""); setVehicleType("spin");
       load(ctx.channel, ctx.accountId);
     } catch (e: any) {
       setErr(e?.message || "Falha ao salvar");
@@ -265,10 +264,23 @@ export default function DashboardPage() {
             <p className="mt-0.5 text-sm text-slate-500">{saleFor.name}</p>
             <label className="mt-5 block text-sm font-medium text-slate-600">Valor da venda (R$)</label>
             <input autoFocus inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0,00" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" />
-            <label className="mt-4 block text-sm font-medium text-slate-600">Telefone do cliente (opcional)</label>
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+55 ..." className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" />
-            <label className="mt-4 block text-sm font-medium text-slate-600">Observacao (opcional)</label>
-            <input value={note} onChange={(e) => setNote(e.target.value)} placeholder="ex.: pacote fim de semana" className="mt-1 w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm outline-none transition focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100" />
+            <label className="mt-4 block text-sm font-medium text-slate-600">Tipo de veículo</label>
+            <div className="mt-2 flex gap-3">
+              <button
+                type="button"
+                onClick={() => setVehicleType("spin")}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${vehicleType === "spin" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+              >
+                🚐 Spin
+              </button>
+              <button
+                type="button"
+                onClick={() => setVehicleType("sedan")}
+                className={`flex-1 rounded-xl py-2.5 text-sm font-semibold transition ${vehicleType === "sedan" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}
+              >
+                🚗 Sedan
+              </button>
+            </div>
             {err && <p className="mt-3 text-sm font-medium text-rose-600">{err}</p>}
             <div className="mt-6 flex justify-end gap-2">
               <button type="button" onClick={() => setSaleFor(null)} className="rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-500 hover:bg-slate-100">Cancelar</button>
