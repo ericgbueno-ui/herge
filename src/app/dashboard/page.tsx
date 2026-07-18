@@ -167,7 +167,9 @@ export default function DashboardPage() {
     fetch(`/api/meta/overview?accountId=${encodeURIComponent(accountId)}`)
       .then((r) => r.json())
       .then((j) => {
-        const found = j?.ok && Array.isArray(j.accounts) ? j.accounts.find((a: Acct) => a.id === accountId) : null;
+        // Normalize accountId: remove "act_" prefix for comparison
+        const accountIdNormalized = accountId.replace(/^act_/, "");
+        const found = j?.ok && Array.isArray(j.accounts) ? j.accounts.find((a: Acct) => a.id === accountIdNormalized) : null;
         if (found) {
           setAccount(found);
           setLive(true);
