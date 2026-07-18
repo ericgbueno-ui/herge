@@ -122,24 +122,8 @@ async function getToken(): Promise<string | null> {
   return process.env.META_ADS_ACCESS_TOKEN || process.env.META_SYSTEM_USER_TOKEN || null;
 }
 
-export async function GET(req: Request) {
-  const token = await getToken();
-  if (!token) return NextResponse.json({ ok: false, error: "Token do Meta nao configurado (nem no banco nem no env)" }, { status: 400 });
-  const { searchParams } = new URL(req.url);
-  const datePreset = searchParams.get("date_preset") || "last_30d";
-  const accountId = searchParams.get("accountId");
-
-  const targets = accountId ? ACCOUNTS.filter((a) => a.id === accountId) : ACCOUNTS;
-  if (accountId && targets.length === 0) {
-    return NextResponse.json({ ok: false, error: "Conta nao encontrada" }, { status: 404 });
-  }
-
-  const [accounts, sales] = await Promise.all([
-    Promise.all(targets.map((a) => fetchAccount(token, a, datePreset))),
-    manualSales(),
-  ]);
-
-  for (const a of accounts as any[]) {
+async function applySales(accounts: any[], sales: Record<string, { sales: number; revenue: number }>) {
+  for (const a of accounts) {
     const s = sales[a.id];
     if (s) {
       a.sales = (a.sales || 0) + s.sales;
@@ -147,6 +131,43 @@ export async function GET(req: Request) {
       if (a.status !== "ok") a.status = "ok";
     }
   }
+  return accounts;
+}
 
-  return NextResponse.json({ ok: true, datePreset, accounts });
+export async function GET(req: Request) {
+  const { searchParams } = new URL(req.url);
+  const datePreset = searchParams.get("date_preset") || "last_30d";
+  const accountId = searchParams.get("accountId");
+
+  if (accountId) {
+    // Conta real conectada via Configuracoes: busca na mesma tabela que /projects usa,
+    // nao na lista fixa abaixo (evita divergencia entre o que o usuario conectou e o que o painel mostra).
+    const dbAccount = await prisma.adAccount.findFirst({
+      where: { channel: AdChannel.META, externalAccountId: accountId },
+      select: { externalAccountId: true, name: true, accessToken: true },
+    });
+    if (!dbAccount) {
+      return NextResponse.json({ ok: false, error: "Conta nao encontrada entre as contas conectadas" }, { status: 404 });
+    }
+    const token = dbAccount.accessToken || (await getToken());
+    if (!token) return NextResponse.json({ ok: false, error: "Token do Meta nao configurado (nem na conta nem no banco nem no env)" }, { status: 400 });
+
+    const target = { key: dbAccount.externalAccountId, id: dbAccount.externalAccountId, name: dbAccount.name, color: "#2563eb" };
+    const [account, sales] = await Promise.all([
+      fetchAccount(token, target, datePreset),
+      manualSales(),
+    ]);
+    const [withSales] = await applySales([account], sales);
+    return NextResponse.json({ ok: true, datePreset, accounts: [withSales] });
+  }
+
+  const token = await getToken();
+  if (!token) return NextResponse.json({ ok: false, error: "Token do Meta nao configurado (nem no banco nem no env)" }, { status: 400 });
+
+  const [accounts, sales] = await Promise.all([
+    Promise.all(ACCOUNTS.map((a) => fetchAccount(token, a, datePreset))),
+    manualSales(),
+  ]);
+
+  return NextResponse.json({ ok: true, datePreset, accounts: await applySales(accounts, sales) });
 }
