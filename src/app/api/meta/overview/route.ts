@@ -152,7 +152,9 @@ export async function GET(req: Request) {
     const token = dbAccount.accessToken || (await getToken());
     if (!token) return NextResponse.json({ ok: false, error: "Token do Meta nao configurado (nem na conta nem no banco nem no env)" }, { status: 400 });
 
-    const target = { key: dbAccount.externalAccountId, id: dbAccount.externalAccountId, name: dbAccount.name, color: "#2563eb" };
+    // Remove "act_" prefix if present, since fetchAccount adds it
+    const accountIdClean = dbAccount.externalAccountId.replace(/^act_/, "");
+    const target = { key: dbAccount.externalAccountId, id: accountIdClean, name: dbAccount.name, color: "#2563eb" };
     const [account, sales] = await Promise.all([
       fetchAccount(token, target, datePreset),
       manualSales(),
