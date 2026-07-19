@@ -790,6 +790,156 @@ model CompanyIntegration {
   @@index([status])
 }
 
+enum WorkflowStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  COMPLETED
+  FAILED
+}
+
+enum WorkflowTriggerType {
+  MANUAL
+  SCHEDULED
+  EVENT
+  WEBHOOK
+}
+
+enum WorkflowActionType {
+  NOTIFICATION
+  TASK
+  RECORD_UPDATE
+  WEBHOOK
+  INTEGRATION_CALL
+}
+
+enum WorkflowExecutionStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+  CANCELED
+}
+
+model Workflow {
+  id          String              @id @default(cuid())
+  companyId   String
+  name        String
+  description String?
+  status      WorkflowStatus      @default(DRAFT)
+  triggerType WorkflowTriggerType
+  config      Json?
+  metadata    Json?
+  version     Int                 @default(1)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  company     Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  triggers    WorkflowTrigger[]
+  actions     WorkflowAction[]
+  executions  WorkflowExecution[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([triggerType])
+}
+
+model WorkflowTrigger {
+  id             String              @id @default(cuid())
+  workflowId     String
+  triggerType    WorkflowTriggerType
+  config         Json
+  isActive       Boolean             @default(true)
+  lastTriggeredAt DateTime?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  workflow       Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([triggerType])
+  @@index([isActive])
+}
+
+model WorkflowAction {
+  id          String              @id @default(cuid())
+  workflowId  String
+  actionType  WorkflowActionType
+  config      Json
+  "order"    Int                 @default(0)
+  isActive    Boolean             @default(true)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  workflow    Workflow            @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@index([workflowId])
+  @@index([actionType])
+  @@index([isActive])
+}
+
+model WorkflowTemplate {
+  id           String              @id @default(cuid())
+  companyId    String
+  name         String
+  description  String?
+  version      Int                 @default(1)
+  triggerType  WorkflowTriggerType
+  category     String?
+  templateData Json
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  company      Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([triggerType])
+  @@index([isActive])
+}
+
+model WorkflowExecution {
+  id           String                 @id @default(cuid())
+  workflowId   String
+  companyId    String
+  status       WorkflowExecutionStatus @default(PENDING)
+  triggerType  WorkflowTriggerType
+  triggeredBy  String?
+  triggerData  Json?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  durationMs   Int?
+  result       Json?
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+
+  workflow     Workflow               @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  logs         WorkflowExecutionLog[]
+  company      Company                @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([workflowId])
+  @@index([status])
+}
+
+model WorkflowExecutionLog {
+  id          String   @id @default(cuid())
+  executionId String
+  companyId   String
+  eventType   String
+  message     String?
+  payload     Json?
+  createdAt   DateTime @default(now())
+
+  execution   WorkflowExecution @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([executionId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
 // --- WhatsApp ---
 
 model WhatsAppConversation {

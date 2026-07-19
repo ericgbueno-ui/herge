@@ -78,6 +78,10 @@ export async function initializeIntegrations(): Promise<void> {
       });
     });
 
+    // 6. Inicializa workflow engine
+    console.log('📦 Inicializando Workflow Engine...');
+    await import('@/core/integrations/workflow/workflow-engine');
+
     // 6. Exibe status
     const status = core.getStatus();
     console.log('✅ Integration Core inicializado com sucesso!');

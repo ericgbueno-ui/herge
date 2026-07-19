@@ -162,6 +162,7 @@ export enum QueueType {
   REFRESH_TOKEN = 'integration:refresh-token',
   HEALTH_CHECK = 'integration:health-check',
   RETRY = 'integration:retry',
+  WORKFLOW = 'workflow:execute',
 }
 
 export interface QueueJob {
@@ -251,6 +252,21 @@ export class QueueManager {
           backoff: {
             type: 'exponential',
             delay: 5000,
+          },
+        },
+      })
+    );
+
+    // Workflow queue - executar workflows em background
+    this.queues.set(
+      QueueType.WORKFLOW,
+      new Queue(QueueType.WORKFLOW, this.redisUrl, {
+        defaultJobOptions: {
+          removeOnComplete: true,
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 3000,
           },
         },
       })
