@@ -76,6 +76,18 @@ model Company {
   revenueCommissions    RevenueCommission[]
   revenueScores         RevenueScore[]
 
+  // MASTER 06: Communication Hub
+  attendanceStatuses    AttendanceStatus[]
+  attendances           Attendance[]
+  attendanceHistories   AttendanceHistory[]
+  reminders             Reminder[]
+  followUps             FollowUp[]
+  lossReasons           LossReason[]
+  saleResults           SaleResult[]
+  salesGoals            SalesGoal[]
+  notifications         Notification[]
+  attendanceQueues      AttendanceQueue[]
+
   @@index([status])
   @@index([segment])
 }
@@ -94,6 +106,12 @@ model User {
   sessions         Session[]
   companyUsers     CompanyUser[]
   auditLogs        AuditLog[]
+  assignedAttendances   Attendance[] @relation("AttendanceAttendant")
+  createdAttendances    Attendance[] @relation("AttendanceCreator")
+  attendanceHistoryEntries AttendanceHistory[]
+  remindersAssigned     Reminder[]
+  followUpsAssigned     FollowUp[]
+  notificationsReceived Notification[]
   createdAt        DateTime      @default(now())
 }
 
@@ -206,6 +224,7 @@ model Campaign {
   leads           Lead[]
   sales           Sale[]
   revenueSales    RevenueSale[]     @relation("RevenueSalesToCampaign")
+  attendances     Attendance[]
 
   @@unique([adAccountId, externalCampaignId])
   @@index([companyId])
@@ -280,6 +299,398 @@ model Alert {
   @@index([createdAt])
 }
 
+// --- Communication Hub ---
+
+enum AttendanceResultType {
+  VENDA_REALIZADA
+  VENDA_PERDIDA
+  EM_NEGOCIACAO
+  RETORNAR_DEPOIS
+  CANCELADO
+  POS_VENDA
+}
+
+enum ReminderTriggerType {
+  STUCK_2H
+  STUCK_24H
+  STUCK_48H
+  NO_RESULT
+  NO_RESPONSIBLE
+  WAITING_RETURN
+  CUSTOM
+}
+
+enum ReminderStatus {
+  PENDING
+  SCHEDULED
+  TRIGGERED
+  COMPLETED
+  CANCELED
+}
+
+enum FollowUpStatus {
+  PENDING
+  SCHEDULED
+  DONE
+  MISSED
+  CANCELED
+}
+
+enum NotificationChannel {
+  INTERNAL
+  PUSH
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+enum QueueItemStatus {
+  WAITING
+  IN_PROGRESS
+  DONE
+  FAILED
+  CANCELED
+}
+
+model AttendanceStatus {
+  id          String   @id @default(cuid())
+  companyId   String
+  code        String
+  name        String
+  description String?
+  color       String?
+  sortOrder   Int      @default(0)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company     Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendances Attendance[]
+
+  @@unique([companyId, code])
+  @@index([companyId])
+  @@index([isActive])
+  @@index([sortOrder])
+}
+
+model Attendance {
+  id                     String   @id @default(cuid())
+  companyId              String
+  leadId                 String?
+  campaignId             String?
+  statusId               String
+  whatsappConversationId  String?
+  attendantId            String?
+  creatorId              String?
+
+  clientName             String
+  clientPhone            String
+  clientEmail            String?
+  origin                 String?
+  channel                String?
+  campaignName           String?
+  adName                 String?
+  creativeName           String?
+  productName            String?
+  responsibleName        String?
+  tenantName             String?
+
+  priority               String   @default("normal")
+  currentQueuePosition   Int?
+
+  startedAt              DateTime @default(now())
+  firstContactAt         DateTime?
+  lastActivityAt         DateTime?
+  dueAt                  DateTime?
+  finishedAt             DateTime?
+  responseTimeSeconds    Int?
+  totalHandlingSeconds   Int?
+
+  notes                  String?
+  customFields           Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  company                Company               @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  lead                   Lead?                 @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  campaign               Campaign?             @relation(fields: [campaignId], references: [id], onDelete: SetNull)
+  status                 AttendanceStatus      @relation(fields: [statusId], references: [id], onDelete: Restrict)
+  whatsappConversation   WhatsAppConversation? @relation(fields: [whatsappConversationId], references: [id], onDelete: SetNull)
+  attendant              User?                 @relation("AttendanceAttendant", fields: [attendantId], references: [id], onDelete: SetNull)
+  creator                User?                 @relation("AttendanceCreator", fields: [creatorId], references: [id], onDelete: SetNull)
+
+  histories              AttendanceHistory[]
+  reminders              Reminder[]
+  followUps              FollowUp[]
+  notifications          Notification[]
+  queueItem              AttendanceQueue?
+  saleResult             SaleResult?
+
+  @@index([companyId])
+  @@index([statusId])
+  @@index([leadId])
+  @@index([campaignId])
+  @@index([attendantId])
+  @@index([creatorId])
+  @@index([startedAt])
+  @@index([createdAt])
+  @@index([companyId, statusId])
+  @@index([companyId, attendantId])
+}
+
+model AttendanceHistory {
+  id               String   @id @default(cuid())
+  companyId        String
+  attendanceId     String
+  leadId           String?
+  eventType        String
+  eventDescription String
+  previousValue    String?
+  newValue         String?
+  userId           String?
+  userEmail        String?
+  metadata         Json?
+  createdAt        DateTime @default(now())
+
+  company          Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance       Attendance @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead             Lead?      @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  user             User?      @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([attendanceId])
+  @@index([leadId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+model Reminder {
+  id              String            @id @default(cuid())
+  companyId       String
+  attendanceId    String?
+  leadId          String?
+  assignedToId    String?
+
+  triggerType     ReminderTriggerType
+  status          ReminderStatus    @default(PENDING)
+  title           String
+  description     String?
+  scheduledAt     DateTime
+  triggeredAt     DateTime?
+  completedAt     DateTime?
+  notes           String?
+  customFields    Json?
+
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  company         Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance      Attendance?       @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead            Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedTo      User?             @relation("ReminderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notifications   Notification[]
+
+  @@index([companyId])
+  @@index([attendanceId])
+  @@index([leadId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@index([companyId, status])
+  @@index([companyId, scheduledAt])
+}
+
+model FollowUp {
+  id              String          @id @default(cuid())
+  companyId       String
+  attendanceId    String?
+  leadId          String?
+  assignedToId    String?
+
+  status          FollowUpStatus  @default(PENDING)
+  title           String
+  description     String?
+  scheduledFor    DateTime
+  completedAt     DateTime?
+  notes           String?
+  customFields    Json?
+
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  company         Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance      Attendance?     @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead            Lead?           @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  assignedTo      User?           @relation("FollowUpAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  notifications   Notification[]
+
+  @@index([companyId])
+  @@index([attendanceId])
+  @@index([leadId])
+  @@index([assignedToId])
+  @@index([status])
+  @@index([scheduledFor])
+  @@index([companyId, status])
+  @@index([companyId, scheduledFor])
+}
+
+model LossReason {
+  id            String               @id @default(cuid())
+  companyId     String
+  reason        RevenueLossReasonType
+  name          String
+  description   String?
+  displayOrder  Int                  @default(0)
+  isActive      Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  company       Company              @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  saleResults   SaleResult[]
+
+  @@unique([companyId, reason])
+  @@index([companyId])
+  @@index([isActive])
+  @@index([displayOrder])
+}
+
+model SaleResult {
+  id             String              @id @default(cuid())
+  companyId      String
+  attendanceId   String             @unique
+  leadId         String?
+  revenueSaleId  String?            @unique
+  lossReasonId   String?
+
+  resultType     AttendanceResultType
+  amount         Decimal?           @db.Decimal(12, 2)
+  productName    String?
+  paymentMethod  String?
+  paymentDate    DateTime?
+  observation    String?
+  resultDate     DateTime           @default(now())
+  resultTime     String?
+  customFields   Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  company        Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance     Attendance         @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  lead           Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  revenueSale    RevenueSale?       @relation(fields: [revenueSaleId], references: [id], onDelete: SetNull)
+  lossReason     LossReason?        @relation(fields: [lossReasonId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([leadId])
+  @@index([revenueSaleId])
+  @@index([lossReasonId])
+  @@index([resultType])
+  @@index([resultDate])
+  @@index([companyId, resultType])
+}
+
+model SalesGoal {
+  id              String   @id @default(cuid())
+  companyId       String
+  name            String
+  description     String?
+  metricType      String
+  targetValue     Decimal  @db.Decimal(12, 2)
+  currentValue    Decimal  @db.Decimal(12, 2) @default(0)
+  progressPercent Decimal  @db.Decimal(5, 2) @default(0)
+  startDate       DateTime
+  endDate         DateTime
+  status          String   @default("active")
+  notes           String?
+  customFields    Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([status])
+  @@index([metricType])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model Notification {
+  id               String             @id @default(cuid())
+  companyId        String
+  attendanceId     String?
+  reminderId       String?
+  followUpId       String?
+  recipientUserId  String?
+
+  channel          NotificationChannel
+  status           NotificationStatus @default(PENDING)
+  type             String
+  title            String
+  message          String
+  payload          Json?
+  sentAt           DateTime?
+  deliveredAt      DateTime?
+  readAt           DateTime?
+  errorMessage     String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  company          Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance       Attendance?        @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+  reminder         Reminder?          @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+  followUp         FollowUp?          @relation(fields: [followUpId], references: [id], onDelete: Cascade)
+  recipientUser    User?              @relation("NotificationRecipient", fields: [recipientUserId], references: [id], onDelete: SetNull)
+
+  @@index([companyId])
+  @@index([attendanceId])
+  @@index([reminderId])
+  @@index([followUpId])
+  @@index([recipientUserId])
+  @@index([channel])
+  @@index([status])
+  @@index([createdAt])
+  @@index([companyId, status])
+}
+
+model AttendanceQueue {
+  id                String          @id @default(cuid())
+  companyId         String
+  attendanceId      String          @unique
+  queueName         String          @default("default")
+  queueStatus       QueueItemStatus @default(WAITING)
+  position          Int             @default(0)
+  priority          Int             @default(0)
+  queuedAt          DateTime        @default(now())
+  scheduledFor      DateTime?
+  startedAt         DateTime?
+  processedAt       DateTime?
+  estimatedWaitSeconds Int?
+  notes             String?
+  customFields      Json?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  attendance        Attendance      @relation(fields: [attendanceId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([attendanceId])
+  @@index([queueStatus])
+  @@index([queueName])
+  @@index([queuedAt])
+  @@index([position])
+  @@index([companyId, queueStatus])
+}
+
 // --- Leads (CRM) ---
 
 model Lead {
@@ -310,6 +721,11 @@ model Lead {
   company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   campaignRef Campaign? @relation(fields: [campaignId], references: [id], onDelete: SetNull)
   revenueSales RevenueSale[]
+  attendances  Attendance[]
+  attendanceHistoryEntries AttendanceHistory[]
+  reminders    Reminder[]
+  followUps    FollowUp[]
+  saleResults  SaleResult[]
 
   @@unique([companyId, email, phone])
   @@index([companyId])

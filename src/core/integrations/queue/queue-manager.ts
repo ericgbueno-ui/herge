@@ -1,10 +1,160 @@
 /**
  * QUEUE MANAGER
- * Gerencia filas BullMQ + Redis
+ * Gerencia filas de integração
  * Responsável por enfileirar jobs de integração
+ *
+ * Fallback em memória para evitar dependência direta de Bull no build.
  */
 
-import Queue, { Queue as BullQueue, Job } from 'bull';
+export interface Job {
+  id: string;
+  data: {
+    provider: string;
+    connectionId: string;
+    companyId: string;
+    data?: Record<string, any>;
+  };
+  attemptsMade: number;
+  opts: {
+    attempts?: number;
+  };
+}
+
+type QueueCounts = {
+  waiting: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+};
+
+type QueueHandler = (job: Job) => Promise<any>;
+
+export class Queue {
+  private waiting: Job[] = [];
+  private active: Job[] = [];
+  private completed: Job[] = [];
+  private failed: Job[] = [];
+  private delayed: Job[] = [];
+  private listeners: Map<string, Array<(...args: any[]) => void>> = new Map();
+  private handler?: QueueHandler;
+  private counter = 0;
+
+  constructor(
+    private name: string,
+    private redisUrl: string,
+    private options?: Record<string, any>
+  ) {
+    void this.name;
+    void this.redisUrl;
+    void this.options;
+  }
+
+  async add(data: Job['data'], opts?: { priority?: number; delay?: number; attempts?: number }) {
+    const job: Job = {
+      id: `${this.name}-${++this.counter}`,
+      data,
+      attemptsMade: 0,
+      opts: {
+        attempts: opts?.attempts,
+      },
+    };
+
+    const delay = opts?.delay || 0;
+    if (delay > 0) {
+      this.delayed.push(job);
+      setTimeout(() => {
+        this.delayed = this.delayed.filter((item) => item.id !== job.id);
+        this.waiting.push(job);
+        void this.drain();
+      }, delay);
+    } else {
+      this.waiting.push(job);
+      void this.drain();
+    }
+
+    return job;
+  }
+
+  process(_concurrency: number, handler: QueueHandler) {
+    this.handler = handler;
+    void this.drain();
+  }
+
+  on(event: string, handler: (...args: any[]) => void) {
+    const list = this.listeners.get(event) || [];
+    list.push(handler);
+    this.listeners.set(event, list);
+  }
+
+  async getJobCounts(): Promise<QueueCounts> {
+    return {
+      waiting: this.waiting.length,
+      active: this.active.length,
+      completed: this.completed.length,
+      failed: this.failed.length,
+      delayed: this.delayed.length,
+    };
+  }
+
+  async clean(_grace: number, status: 'completed' | 'failed') {
+    if (status === 'completed') {
+      this.completed = [];
+    }
+
+    if (status === 'failed') {
+      this.failed = [];
+    }
+  }
+
+  async close() {
+    this.handler = undefined;
+    this.waiting = [];
+    this.active = [];
+    this.delayed = [];
+  }
+
+  private emit(event: string, ...args: any[]) {
+    const handlers = this.listeners.get(event) || [];
+    handlers.forEach((handler) => {
+      try {
+        handler(...args);
+      } catch (error) {
+        console.error(`[Queue:${this.name}] Listener error`, error);
+      }
+    });
+  }
+
+  private async drain() {
+    if (!this.handler || this.active.length > 0) {
+      return;
+    }
+
+    const job = this.waiting.shift();
+    if (!job) {
+      return;
+    }
+
+    this.active.push(job);
+
+    try {
+      await this.handler(job);
+      this.active = this.active.filter((item) => item.id !== job.id);
+      this.completed.push(job);
+      this.emit('completed', job);
+    } catch (error) {
+      job.attemptsMade += 1;
+      this.active = this.active.filter((item) => item.id !== job.id);
+      this.failed.push(job);
+      this.emit('failed', job, error);
+      this.emit('error', error);
+    }
+
+    void this.drain();
+  }
+}
+
+type BullQueue = Queue;
 
 export enum QueueType {
   SYNC = 'integration:sync',
