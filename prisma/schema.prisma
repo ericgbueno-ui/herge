@@ -88,6 +88,10 @@ model Company {
   salesGoals            SalesGoal[]
   notifications         Notification[]
   attendanceQueues      AttendanceQueue[]
+  workflows             Workflow[]
+  workflowTemplates     WorkflowTemplate[]
+  workflowExecutions    WorkflowExecution[]
+  workflowExecutionLogs WorkflowExecutionLog[]
 
   @@index([status])
   @@index([segment])
@@ -110,9 +114,9 @@ model User {
   assignedAttendances   Attendance[] @relation("AttendanceAttendant")
   createdAttendances    Attendance[] @relation("AttendanceCreator")
   attendanceHistoryEntries AttendanceHistory[]
-  remindersAssigned     Reminder[]
-  followUpsAssigned     FollowUp[]
-  notificationsReceived Notification[]
+  remindersAssigned     Reminder[]            @relation("ReminderAssignee")
+  followUpsAssigned     FollowUp[]            @relation("FollowUpAssignee")
+  notificationsReceived Notification[]        @relation("NotificationRecipient")
   createdAt        DateTime      @default(now())
 }
 
@@ -959,6 +963,7 @@ model WhatsAppConversation {
   company  Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
   messages WhatsAppMessage[]
   analyses AIAnalysis[]
+  attendances           Attendance[]
 
   @@unique([companyId, phoneNumber])
   @@index([companyId])
@@ -1202,6 +1207,7 @@ model RevenueSale {
 
   timeline          RevenueTimeline[]
   commissions       RevenueCommission[]
+  saleResult        SaleResult?
 
   @@index([companyId])
   @@index([status])
