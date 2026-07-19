@@ -33,7 +33,7 @@ export interface WorkflowActionDTO {
   workflowId: string;
   actionType: WorkflowActionType;
   config: Record<string, any>;
-  order: number;
+  actionOrder: number;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -97,7 +97,7 @@ export interface CreateWorkflowActionDTO {
   workflowId: string;
   actionType: WorkflowActionType;
   config: Record<string, any>;
-  order?: number;
+  actionOrder?: number;
 }
 
 export interface CreateWorkflowExecutionDTO {

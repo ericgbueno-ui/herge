@@ -93,7 +93,7 @@ export class WorkflowRepository {
     workflowId: string;
     actionType: string;
     config: Prisma.JsonValue;
-    order?: number;
+    actionOrder?: number;
   }): Promise<WorkflowAction> {
     return prisma.workflowAction.create({
       data,

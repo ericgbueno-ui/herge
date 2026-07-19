@@ -868,7 +868,7 @@ model WorkflowAction {
   workflowId  String
   actionType  WorkflowActionType
   config      Json
-  "order"    Int                 @default(0)
+  actionOrder Int                 @default(0)
   isActive    Boolean             @default(true)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
