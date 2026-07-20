@@ -104,6 +104,7 @@ export async function GET(req: NextRequest) {
       companyName: campaign.companyId ? companyById.get(campaign.companyId)?.name || "—" : "—",
       ctr: campaign.impressions > 0 ? (campaign.clicks / campaign.impressions) * 100 : 0,
       cpc: campaign.clicks > 0 ? campaign.spend / campaign.clicks : null,
+      costPerPlatformResult: campaign.platformConversions > 0 ? campaign.spend / campaign.platformConversions : null,
       sales: attributedSales.length,
       revenue: campaignRevenue,
       roas: campaign.spend > 0 && attributedSales.length > 0 ? campaignRevenue / campaign.spend : null,

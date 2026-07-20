@@ -11,6 +11,7 @@ interface MetaAction {
 interface DailyCampaignInsight {
   campaign_id: string;
   campaign_name: string;
+  objective?: string;
   date_start: string;
   spend?: string;
   impressions?: string;
@@ -38,6 +39,28 @@ function pickPurchase(actions?: MetaAction[]): number {
   return 0;
 }
 
+const PRIMARY_RESULT_TYPES = [
+  "purchase",
+  "omni_purchase",
+  "offsite_conversion.fb_pixel_purchase",
+  "onsite_conversion.messaging_conversation_started_7d",
+  "onsite_conversion.total_messaging_connection",
+  "lead",
+  "onsite_conversion.lead",
+  "onsite_conversion.lead_grouped",
+  "landing_page_view",
+  "omni_landing_page_view",
+];
+
+function pickPrimaryResult(actions?: MetaAction[]): { type: string | null; value: number } {
+  if (!actions) return { type: null, value: 0 };
+  for (const type of PRIMARY_RESULT_TYPES) {
+    const found = actions.find((action) => action.action_type === type);
+    if (found) return { type, value: parseFloat(found.value) || 0 };
+  }
+  return { type: null, value: 0 };
+}
+
 /**
  * Busca insights diários (nível campanha) dos últimos N dias em uma única
  * chamada paginada e grava Campaign + MetricSnapshot no banco.
@@ -59,7 +82,7 @@ export async function syncMetaAdAccount(
   let url: string | null =
     `${META_GRAPH_API}/${META_API_VERSION}/${actId}/insights?` +
     `level=campaign` +
-    `&fields=campaign_id,campaign_name,spend,impressions,clicks,actions,action_values` +
+    `&fields=campaign_id,campaign_name,objective,spend,impressions,clicks,actions,action_values` +
     `&time_increment=1` +
     `&time_range={"since":"${since}","until":"${until}"}` +
     `&limit=500` +
@@ -88,11 +111,12 @@ export async function syncMetaAdAccount(
             externalCampaignId: row.campaign_id,
           },
         },
-        update: { name: row.campaign_name, companyId: account.companyId ?? undefined },
+        update: { name: row.campaign_name, objective: row.objective, companyId: account.companyId ?? undefined },
         create: {
           adAccountId: account.id,
           externalCampaignId: row.campaign_id,
           name: row.campaign_name,
+          objective: row.objective,
           companyId: account.companyId,
         },
       });
@@ -104,13 +128,15 @@ export async function syncMetaAdAccount(
     const spend = parseFloat(row.spend || "0");
     const impressions = parseInt(row.impressions || "0");
     const clicks = parseInt(row.clicks || "0");
-    const conversions = Math.round(pickPurchase(row.actions));
+    const primaryResult = pickPrimaryResult(row.actions);
+    const conversions = Math.round(primaryResult.value);
     const conversionValue = pickPurchase(row.action_values);
+    const sourceMetadata = { primaryResultType: primaryResult.type, objective: row.objective || null };
 
     await prisma.metricSnapshot.upsert({
       where: { campaignId_date: { campaignId, date } },
-      update: { spend, impressions, clicks, conversions, conversionValue, dataOrigin: "LIVE", sourceSystem: "META", sourceExternalId: `${row.campaign_id}:${row.date_start}`, sourcedAt: new Date() },
-      create: { campaignId, date, spend, impressions, clicks, conversions, conversionValue, dataOrigin: "LIVE", sourceSystem: "META", sourceExternalId: `${row.campaign_id}:${row.date_start}` },
+      update: { spend, impressions, clicks, conversions, conversionValue, sourceMetadata, dataOrigin: "LIVE", sourceSystem: "META", sourceExternalId: `${row.campaign_id}:${row.date_start}`, sourcedAt: new Date() },
+      create: { campaignId, date, spend, impressions, clicks, conversions, conversionValue, sourceMetadata, dataOrigin: "LIVE", sourceSystem: "META", sourceExternalId: `${row.campaign_id}:${row.date_start}` },
     });
     snapshots++;
   }
