@@ -98,7 +98,7 @@ export class KPIService {
       impressions: totalImpressions,
       clicks: totalClicks,
       leads: campaign.leads.length,
-      qualified: campaign.leads.filter((l) => l.qualified).length,
+      qualified: 0,
       deals: 0,
       sales: campaign.sales.length,
       customers: campaign.sales.length,
@@ -250,7 +250,7 @@ export class KPIService {
         dataOrigin: { not: 'DEMO' },
         createdAt: { gte: startDate, lte: endDate },
       },
-      select: { id: true, qualified: true },
+      select: { id: true },
     });
 
     const sales = await prisma.sale.findMany({
@@ -264,7 +264,7 @@ export class KPIService {
 
     return {
       leads: leads.length,
-      qualified: leads.filter((l) => l.qualified).length,
+      qualified: 0,
       sales: sales.length,
     };
   }

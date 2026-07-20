@@ -123,7 +123,7 @@ export async function GET(req: NextRequest) {
         select: { createdAt: true, company: { select: { name: true } } },
       }),
       prisma.lead.count({
-        where: { ...companyWhere, ...trustedData, createdAt: { gte: periodStart }, qualified: true },
+        where: { ...companyWhere, ...trustedData, createdAt: { gte: periodStart }, estimatedValue: { not: null } },
       }),
       prisma.whatsAppConversation.count({ where: { ...companyWhere, createdAt: { gte: periodStart } } }),
       prisma.sale.count({
