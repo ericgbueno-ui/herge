@@ -1,30 +1,16 @@
-import { NextRequest } from 'next/server';
-import { dispatchRevenueRequest } from '../_router';
+import { NextResponse } from "next/server";
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return dispatchRevenueRequest(req, 'GET', params.path || []);
+function removed() {
+  return NextResponse.json(
+    {
+      error: "API legada removida",
+      replacement: "/api/dashboard/control-center e /api/v1/companies/:companyId/sales",
+    },
+    { status: 410 }
+  );
 }
 
-export async function POST(
-  req: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return dispatchRevenueRequest(req, 'POST', params.path || []);
-}
-
-export async function PATCH(
-  req: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return dispatchRevenueRequest(req, 'PATCH', params.path || []);
-}
-
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { path: string[] } }
-) {
-  return dispatchRevenueRequest(req, 'DELETE', params.path || []);
-}
+export const GET = removed;
+export const POST = removed;
+export const PATCH = removed;
+export const DELETE = removed;

@@ -1,18 +1,13 @@
-import { NextRequest } from 'next/server';
-import { dispatchWorkflowRequest } from './_router';
+import { NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
-  return dispatchWorkflowRequest(req, 'GET', []);
+function removed() {
+  return NextResponse.json(
+    { error: "API de workflows legada removida; nenhuma automação ativa depende desta rota." },
+    { status: 410 }
+  );
 }
 
-export async function POST(req: NextRequest) {
-  return dispatchWorkflowRequest(req, 'POST', []);
-}
-
-export async function PATCH(req: NextRequest) {
-  return dispatchWorkflowRequest(req, 'PATCH', []);
-}
-
-export async function DELETE(req: NextRequest) {
-  return dispatchWorkflowRequest(req, 'DELETE', []);
-}
+export const GET = removed;
+export const POST = removed;
+export const PATCH = removed;
+export const DELETE = removed;

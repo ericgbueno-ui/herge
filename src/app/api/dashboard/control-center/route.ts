@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }),
     prisma.metricSnapshot.findMany({
       where: { ...trusted, date: { gte: since }, campaign: companyFilter },
-      select: { spend: true, impressions: true, clicks: true, conversions: true, conversionValue: true, campaignId: true, campaign: { select: { companyId: true, name: true, adAccount: { select: { channel: true } } } } },
+      select: { spend: true, impressions: true, clicks: true, conversions: true, conversionValue: true, campaignId: true, campaign: { select: { companyId: true, name: true, objective: true, adAccount: { select: { channel: true, name: true } } } } },
     }),
     prisma.lead.findMany({ where: { ...companyFilter, ...trusted, createdAt: { gte: since } }, select: { companyId: true } }),
     prisma.sale.findMany({ where: { ...companyFilter, ...trusted, paymentStatus: "completed", createdAt: { gte: since } }, select: { companyId: true, campaignId: true, amount: true, profit: true } }),
@@ -46,6 +46,7 @@ export async function GET(req: NextRequest) {
   const impressions = snapshots.reduce((sum, row) => sum + row.impressions, 0);
   const clicks = snapshots.reduce((sum, row) => sum + row.clicks, 0);
   const confirmedSales = sales.length;
+  const unattributedSales = sales.filter((row) => !row.campaignId);
   const knownSalesProfit = sales.filter((row) => row.profit !== null);
   const grossSalesProfit = knownSalesProfit.reduce((sum, row) => sum + Number(row.profit), 0);
 
@@ -83,9 +84,9 @@ export async function GET(req: NextRequest) {
     };
   });
 
-  const campaignMap = new Map<string, { id: string; name: string; companyId: string | null; channel: string; spend: number; impressions: number; clicks: number; platformConversions: number; platformConversionValue: number }>();
+  const campaignMap = new Map<string, { id: string; name: string; objective: string | null; accountName: string; companyId: string | null; channel: string; spend: number; impressions: number; clicks: number; platformConversions: number; platformConversionValue: number }>();
   for (const row of snapshots) {
-    const current = campaignMap.get(row.campaignId) || { id: row.campaignId, name: row.campaign.name, companyId: row.campaign.companyId, channel: row.campaign.adAccount.channel, spend: 0, impressions: 0, clicks: 0, platformConversions: 0, platformConversionValue: 0 };
+    const current = campaignMap.get(row.campaignId) || { id: row.campaignId, name: row.campaign.name, objective: row.campaign.objective, accountName: row.campaign.adAccount.name, companyId: row.campaign.companyId, channel: row.campaign.adAccount.channel, spend: 0, impressions: 0, clicks: 0, platformConversions: 0, platformConversionValue: 0 };
     current.spend += Number(row.spend);
     current.impressions += row.impressions;
     current.clicks += row.clicks;
@@ -131,12 +132,15 @@ export async function GET(req: NextRequest) {
       leads: leads.length,
       conversations,
       sales: confirmedSales,
+      unattributedSales: unattributedSales.length,
+      unattributedRevenue: unattributedSales.reduce((sum, row) => sum + Number(row.amount), 0),
       revenue,
       profitKnown: sales.length > 0 && knownSalesProfit.length === sales.length,
       netProfit: sales.length > 0 && knownSalesProfit.length === sales.length ? grossSalesProfit - spend : null,
       roas: spend > 0 && confirmedSales > 0 ? revenue / spend : null,
       connectedIntegrations: integrations.filter((row) => row.status === "connected").length,
       integrationErrors: integrations.filter((row) => row.status === "error" || row.lastError).length,
+      lastSyncAt: accounts.map((row) => row.lastSyncedAt).filter(Boolean).sort().at(-1) || null,
     },
     channels: [...channelMap.entries()].map(([channel, values]) => ({ channel, ...values, ctr: values.impressions > 0 ? (values.clicks / values.impressions) * 100 : 0 })),
     campaignPerformance,

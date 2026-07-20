@@ -3,14 +3,12 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Building2, LayoutDashboard, Megaphone, Plug, Settings } from "lucide-react";
+import { Building2, LayoutDashboard, Plug } from "lucide-react";
 
 const navigation = [
   { label: "Visão geral", href: "/dashboard", icon: LayoutDashboard },
   { label: "Clientes", href: "/companies", icon: Building2 },
-  { label: "Mídia", href: "/meta-ads", icon: Megaphone },
-  { label: "Integrações", href: "/settings", icon: Plug },
-  { label: "Configurações", href: "/settings", icon: Settings },
+  { label: "Conexões", href: "/settings", icon: Plug },
 ];
 
 export function Sidebar() {
@@ -29,7 +27,7 @@ export function Sidebar() {
       </nav>
       <div className="border-t border-white/5 p-4">
         <p className="text-sm font-semibold text-white">Hergel</p>
-        <p className="mt-1 text-xs leading-5 text-slate-500">Gestão centralizada e dados isolados por cliente.</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Campanhas, resultados e decisões isolados por cliente.</p>
       </div>
     </aside>
   );

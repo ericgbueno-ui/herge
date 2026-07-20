@@ -8,7 +8,7 @@ export interface DailyCampaignMetric {
   clicks: number;
   conversions: number;
   conversionValue?: number;
-  raw?: unknown;
+  raw?: Prisma.InputJsonValue;
 }
 
 export interface AdAccountRef {
@@ -16,3 +16,4 @@ export interface AdAccountRef {
   name: string;
   loginCustomerId?: string;
 }
+import type { Prisma } from "@prisma/client";

@@ -1,4 +1,5 @@
 import type { DailyCampaignMetric } from "./types";
+import type { Prisma } from "@prisma/client";
 
 const GRAPH_API_VERSION = "v21.0";
 const PURCHASE_ACTION_TYPES = ["offsite_conversion.fb_pixel_purchase", "purchase"];
@@ -28,7 +29,7 @@ interface MetaInsightsResponse {
 function sumActionValue(actions: MetaAction[] | undefined, types: string[]): number {
   if (!actions) return 0;
   return actions
-    .filter((a: any) => types.includes(a.action_type))
+    .filter((action) => types.includes(action.action_type))
     .reduce((acc, a) => acc + Number(a.value ?? 0), 0);
 }
 
@@ -88,7 +89,7 @@ export async function fetchMetaCampaignInsights(params: {
         clicks: Number(row.clicks ?? 0),
         conversions: sumActionValue(row.actions, PURCHASE_ACTION_TYPES),
         conversionValue: sumActionValue(row.action_values, PURCHASE_ACTION_TYPES),
-        raw: row,
+        raw: JSON.parse(JSON.stringify(row)) as Prisma.InputJsonValue,
       });
     }
 

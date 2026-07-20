@@ -265,7 +265,7 @@ export default function CompaniesPage() {
             {companies.map((company) => (
               <Link
                 key={company.id}
-                href={`/companies/${company.id}`}
+                href={`/dashboard?companyId=${company.id}`}
                 className="group rounded-[1.75rem] border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_60px_-25px_rgba(0,0,0,0.65)] transition hover:-translate-y-1 hover:border-cyan-400/20 hover:bg-white/[0.06]"
               >
                 <div className="mb-3 flex items-start justify-between gap-3">

@@ -20,6 +20,12 @@ interface DailyCampaignInsight {
   action_values?: MetaAction[];
 }
 
+interface MetaInsightsPage {
+  data?: DailyCampaignInsight[];
+  paging?: { next?: string };
+  error?: { message?: string };
+}
+
 interface SyncableAdAccount {
   id: string;
   externalAccountId: string;
@@ -89,8 +95,8 @@ export async function syncMetaAdAccount(
     `&access_token=${account.accessToken}`;
 
   while (url) {
-    const response = await fetch(url);
-    const data = await response.json();
+    const response: Response = await fetch(url);
+    const data = (await response.json()) as MetaInsightsPage;
     if (!response.ok) {
       throw new Error(data.error?.message || `Meta API error: ${response.status}`);
     }
